@@ -2846,7 +2846,7 @@ WifiPhy::MaybeCcaBusyDuration ()
       m_state->SwitchMaybeToCcaBusy (delayUntilCcaEnd);
     }
 }
-
+                                                                                              
 void
 WifiPhy::StartReceivePayload (Ptr<Event> event)
 {
@@ -2909,7 +2909,7 @@ WifiPhy::StartReceivePayload (Ptr<Event> event)
     }
   m_endRxEvent = Simulator::Schedule (payloadDuration, &WifiPhy::ResetReceive, this, event);
 }
-
+                                                                                                          
 void
 WifiPhy::EndReceive (Ptr<Event> event)
 {
@@ -2984,7 +2984,7 @@ WifiPhy::EndReceive (Ptr<Event> event)
   m_currentEvent = 0;
   MaybeCcaBusyDuration ();
 }
-
+                                                                                                          
 std::pair<bool, SignalNoiseDbm>
 WifiPhy::GetReceptionStatus (Ptr<const WifiPsdu> psdu, Ptr<Event> event, Time relativeMpduStart, Time mpduDuration)
 {

@@ -21,6 +21,12 @@
  *          Stefano Avallone <stavallo@unina.it>
  */
 
+//AH:
+#include "ns3/node.h"
+#include <iostream>
+#include <iomanip>
+#include "ns3/log-macros-enabled.h"
+
 #include "ns3/simulator.h"
 #include "ns3/log.h"
 #include "mac-low.h"
@@ -830,6 +836,31 @@ MacLow::ReceiveOk (Ptr<WifiMacQueueItem> mpdu, double rxSnr, WifiTxVector txVect
    */
   const WifiMacHeader& hdr = mpdu->GetHeader ();
   Ptr<Packet> packet = mpdu->GetPacket ()->Copy ();
+  
+  // AH:
+  WifiMacType type = hdr.GetType();
+  Ptr<WifiNetDevice> wifinet = DynamicCast<WifiNetDevice> (m_phy ->GetDevice());
+
+  Ptr<Node> nodo = wifinet->GetNode(); 
+  uint32_t nodo_id = nodo->GetId();
+
+  //double t_recibi = Simulator::Now().GetSeconds();
+
+  uint32_t mpduSize = mpdu->GetSize();
+
+  //std::setprecision(10);
+  //NS_LOG_APPEND_TIME_PREFIX;
+  //NS_LOG_APPEND_NODE_PREFIX;
+  std::clog << "--> AH_RX: N"<< nodo_id + 1 <<",  T:"; 
+  NS_LOG_APPEND_TIME_PREFIX;
+  std::clog <<"; type=" << type << ",         PktSize = "<< mpduSize <<".B , MAC:"<< GetAddress();
+  std::clog <<" ( " << wifinet->GetAddress()<< ")"<< std::endl;
+  
+
+  //NS_LOG_UNCOND ("--> AH_RX: N"<< nodo_id + 1 <<",  T:"<< t_recibi <<" seg,             type=" << type);
+  //bool isdata = hdr.IsData();
+  
+  //NS_LOG_UNCOND ()
 
   bool isPrevNavZero = IsNavZero ();
   NS_LOG_DEBUG ("duration/id=" << hdr.GetDuration ());
@@ -2596,6 +2627,9 @@ MacLow::DeaggregateAmpduAndReceive (Ptr<WifiPsdu> psdu, double rxSnr, WifiTxVect
       WifiMacHeader firsthdr = (*n)->GetHeader ();
       NS_LOG_DEBUG ("duration/id=" << firsthdr.GetDuration ());
       NotifyNav ((*n)->GetPacket (), firsthdr);
+
+      // AH:
+      //firsthdr.GetAddr1 () );
 
       if (firsthdr.GetAddr1 () == m_self)
         {
