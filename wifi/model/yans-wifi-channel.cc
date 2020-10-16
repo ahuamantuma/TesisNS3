@@ -18,10 +18,6 @@
  * Author: Mathieu Lacage, <mathieu.lacage@sophia.inria.fr>
  */
 
-// AH:
-#include <chrono>
-#include <ctime>
-
 #include "ns3/simulator.h"
 #include "ns3/log.h"
 #include "ns3/pointer.h"
@@ -126,15 +122,10 @@ YansWifiChannel::Send (Ptr<YansWifiPhy> sender, Ptr<const WifiPpdu> ppdu, double
           
           uint32_t mpduSize = ppdu->GetPsdu()->GetSize();
           
-          
-
-          //double t_envie = Simulator::Now().GetSeconds();
-          
           std::clog << "--> AH_TX: N"<<srcNode + 1 <<",  T:";
           NS_LOG_APPEND_TIME_PREFIX;
           std::clog <<"; type="<< type << " PktSize: "<<mpduSize<<".B, MAC:" <<wifinet->GetAddress();
           std::clog <<", delay: "<<delay <<std::endl;
-
           
           Simulator::ScheduleWithContext (dstNode,
                                           delay, &YansWifiChannel::Receive,
