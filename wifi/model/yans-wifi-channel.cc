@@ -116,17 +116,23 @@ YansWifiChannel::Send (Ptr<YansWifiPhy> sender, Ptr<const WifiPpdu> ppdu, double
             }
           
           // AH:
-          WifiMacType type = ppdu->GetPsdu()->GetHeader(0).GetType();
-          Ptr<NetDevice> wifinet = DynamicCast<NetDevice> (sender->GetDevice());
-          uint32_t srcNode = wifinet->GetNode()->GetId();
-          
+          // ===================================================================
+          // Considerando que no hay agregacion, se elige el primer psdu de la lista
+          WifiMacHeader hdr = ppdu->GetPsdu()->GetHeader(0);
+          std::string pktType = hdr.IsCtl() ? "CTL" : hdr.IsMgt() ? "MNG" : "DAT";
+          Mac48Address receiver = ppdu->GetPsdu()->GetAddr1();
+          Mac48Address transmitter = ppdu->GetPsdu()->GetAddr2();
+
           uint32_t mpduSize = ppdu->GetPsdu()->GetSize();
-          
-          std::clog << "--> AH_TX: N"<<srcNode + 1 <<",  T:";
+          uint32_t srcNodeId = sender->GetDevice()->GetNode()->GetId();          
+
+          std::clog << "--> TX: N"<<srcNodeId + 1 <<" ; T:";
           NS_LOG_APPEND_TIME_PREFIX;
-          std::clog <<"; type="<< type << " PktSize: "<<mpduSize<<".B, MAC:" <<wifinet->GetAddress();
-          std::clog <<", delay: "<<delay <<std::endl;
-          
+          std::clog <<": type="<< pktType << ", MPDU="<<mpduSize<<".B, ";
+          std::clog << "From: (" << transmitter << "), To: ("<< receiver <<")";
+          std::clog << std::endl;
+          // ===================================================================
+
           Simulator::ScheduleWithContext (dstNode,
                                           delay, &YansWifiChannel::Receive,
                                           (*i), copy, rxPowerDbm);

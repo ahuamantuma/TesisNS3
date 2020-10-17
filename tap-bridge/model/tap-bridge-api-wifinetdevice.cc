@@ -353,48 +353,6 @@ ApiWifiNetDevice::ConfigConstRate()
       return false;
     }
     ns3::Config::Set (osconf.str(), ns3::StringValue( tokens.at(2) ));
-    
-    /*
-    // Para el comportamiento del Access Point Aironet en la experiencia de
-    // inalambricas. La sensitividad de recepcion tambien varia con el MCS 
-    // del DataMode
-    
-    // Config Path de WifiPhy
-    std::ostringstream osconfphy;
-    osconfphy << "/NodeList/" << nodeId
-      << "/DeviceList/" << deviceId
-      << "/$ns3::WifiNetDevice/Phy/RxSensitivity";
-    
-    if (std::string(tokens.at(1)).compare("DataMode")==0){
-      if (std::string(tokens.at(2)).compare("HtMcs0")==0) {
-        ns3::Config::Set (osconfphy.str(), ns3::DoubleValue(-90));
-      }
-      else if (std::string(tokens.at(2)).compare("HtMcs1")==0) {
-        ns3::Config::Set (osconfphy.str(), ns3::DoubleValue(-87));
-      }
-      else if (std::string(tokens.at(2)).compare("HtMcs2")==0) {
-        ns3::Config::Set (osconfphy.str(), ns3::DoubleValue(-84));
-      }
-      else if (std::string(tokens.at(2)).compare("HtMcs3")==0) {
-        ns3::Config::Set (osconfphy.str(), ns3::DoubleValue(-82));
-      }
-      else if (std::string(tokens.at(2)).compare("HtMcs4")==0) {
-        ns3::Config::Set (osconfphy.str(), ns3::DoubleValue(-79));
-      }
-      else if (std::string(tokens.at(2)).compare("HtMcs5")==0) {
-        ns3::Config::Set (osconfphy.str(), ns3::DoubleValue(-74));
-      }
-      else if (std::string(tokens.at(2)).compare("HtMcs6")==0) {
-        ns3::Config::Set (osconfphy.str(), ns3::DoubleValue(-72));
-      }
-      else if (std::string(tokens.at(2)).compare("HtMcs7")==0) {
-        ns3::Config::Set (osconfphy.str(), ns3::DoubleValue(-71));
-      }
-      else {
-        // No deberia pasar pero vamo a ver
-      }
-    }
-    */
   }
   else {
     // No es niguno. Esto no deberia ocurrir por la definicion incial
