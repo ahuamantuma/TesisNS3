@@ -428,6 +428,9 @@ TapBridge::CreateTap (void)
       //
       Address address = nd->GetAddress ();
       Mac48Address mac48Address = Mac48Address::ConvertFrom (address);
+      
+      // AH:
+      //NS_LOG_UNCOND ("--> AH: Creating TAP MAC: "<<mac48Address);
 
       //
       // The device-name is something we may want the system to make up in 

@@ -1833,6 +1833,8 @@ WifiPhy::GetPhyTrainingSymbolDuration (WifiTxVector txVector)
   switch (txVector.GetPreambleType ())
     {
     case WIFI_PREAMBLE_HT_MF:
+      // AH:
+       //NS_LOG_UNCOND("HT_MF_PREAMBLE: "<< MicroSeconds (4 + (4 * Ndltf) + (4 * Neltf)));
       return MicroSeconds (4 + (4 * Ndltf) + (4 * Neltf));
     case WIFI_PREAMBLE_HT_GF:
       return MicroSeconds ((4 * Ndltf) + (4 * Neltf));
@@ -2418,6 +2420,10 @@ WifiPhy::CalculateTxDuration (uint32_t size, WifiTxVector txVector, uint16_t fre
 {
   Time duration = CalculatePhyPreambleAndHeaderDuration (txVector)
     + GetPayloadDuration (size, txVector, frequency);
+  // AH:
+  //NS_LOG_APPEND_TIME_PREFIX;
+  //std::clog << "; PHY HEADER: "<< CalculatePhyPreambleAndHeaderDuration (txVector) << ", Payload Duration: "<<GetPayloadDuration (size, txVector, frequency);
+  //std::clog << std::endl;
   return duration;
 }
 
@@ -2561,7 +2567,9 @@ WifiPhy::Send (Ptr<const WifiPsdu> psdu, WifiTxVector txVector)
       NotifyTxDrop (psdu);
       return;
     }
-
+  
+  // AH:
+  //std::clog << "--> N"<< m_device->GetNode()->GetId()+1<<", ";
   Time txDuration = CalculateTxDuration (psdu->GetSize (), txVector, GetFrequency ());
   NS_ASSERT (txDuration.IsStrictlyPositive ());
 
@@ -2644,6 +2652,8 @@ WifiPhy::StartReceiveHeader (Ptr<Event> event)
         {
           //Schedule end of non-HT PHY header
           Time remainingPreambleAndNonHtHeaderDuration = GetPhyPreambleDuration (txVector) + GetPhyHeaderDuration (txVector) - GetPreambleDetectionDuration ();
+          // AH:
+          //NS_LOG_UNCOND ("--> AH: PreambleDuration="<<GetPhyPreambleDuration (txVector).GetMicroSeconds());
           m_state->SwitchMaybeToCcaBusy (remainingPreambleAndNonHtHeaderDuration);
           m_endPhyRxEvent = Simulator::Schedule (remainingPreambleAndNonHtHeaderDuration, &WifiPhy::ContinueReceiveHeader, this, event);
         }

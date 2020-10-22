@@ -32,6 +32,9 @@
 #include "wifi-ppdu.h"
 #include "wifi-psdu.h"
 
+// Alejandro:
+#include "ns3/boolean.h"
+
 namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("YansWifiChannel");
@@ -53,6 +56,11 @@ YansWifiChannel::GetTypeId (void)
                    PointerValue (),
                    MakePointerAccessor (&YansWifiChannel::m_delay),
                    MakePointerChecker<PropagationDelayModel> ())
+    .AddAttribute ("LogActivated", "Enable Logging",
+                   BooleanValue(false),
+                   MakeBooleanAccessor (&YansWifiChannel::GetLogActivate,
+                                        &YansWifiChannel::SetLogActivate),
+                   MakeBooleanChecker() )
   ;
   return tid;
 }
@@ -119,18 +127,23 @@ YansWifiChannel::Send (Ptr<YansWifiPhy> sender, Ptr<const WifiPpdu> ppdu, double
           // ===================================================================
           // Considerando que no hay agregacion, se elige el primer psdu de la lista
           WifiMacHeader hdr = ppdu->GetPsdu()->GetHeader(0);
-          std::string pktType = hdr.IsCtl() ? "CTL" : hdr.IsMgt() ? "MNG" : "DAT";
-          Mac48Address receiver = ppdu->GetPsdu()->GetAddr1();
-          Mac48Address transmitter = ppdu->GetPsdu()->GetAddr2();
+          
+          if (m_isLogActivated) {
+            std::string pktType = hdr.IsData() ? "DAT" : hdr.IsMgt() ? "MNG" : hdr.IsAck() ? "ACK" : hdr.IsRts() ? "RTS" : hdr.IsCts() ? "CTS" : "CTL";
+            Mac48Address receiver = ppdu->GetPsdu()->GetAddr1();
+            Mac48Address transmitter = ppdu->GetPsdu()->GetAddr2();
+            //WifiPreamble preamble = ppdu->GetTxVector().GetPreambleType();         
 
-          uint32_t mpduSize = ppdu->GetPsdu()->GetSize();
-          uint32_t srcNodeId = sender->GetDevice()->GetNode()->GetId();          
+            uint32_t mpduSize = ppdu->GetPsdu()->GetSize();
+            uint32_t srcNodeId = sender->GetDevice()->GetNode()->GetId();          
 
-          std::clog << "--> TX: N"<<srcNodeId + 1 <<" ; T:";
-          NS_LOG_APPEND_TIME_PREFIX;
-          std::clog <<": type="<< pktType << ", MPDU="<<mpduSize<<".B, ";
-          std::clog << "From: (" << transmitter << "), To: ("<< receiver <<")";
-          std::clog << std::endl;
+            std::clog << "--> TX: N"<<srcNodeId + 1 <<" ; T:";
+            NS_LOG_APPEND_TIME_PREFIX;
+            std::clog <<": type="<< pktType << ",           MPDU="<<mpduSize<<".B, ";
+            std::clog << "From: (" << transmitter << "), To: ("<< receiver <<")";
+            std::clog << ", Mode="<<ppdu->GetTxVector().GetMode();
+            std::clog << std::endl;
+          }
           // ===================================================================
 
           Simulator::ScheduleWithContext (dstNode,
@@ -183,6 +196,18 @@ YansWifiChannel::AssignStreams (int64_t stream)
   int64_t currentStream = stream;
   currentStream += m_loss->AssignStreams (stream);
   return (currentStream - stream);
+}
+
+void
+YansWifiChannel::SetLogActivate (bool value)
+{
+  m_isLogActivated = value;
+}
+
+bool
+YansWifiChannel::GetLogActivate() const
+{
+  return m_isLogActivated;
 }
 
 } //namespace ns3

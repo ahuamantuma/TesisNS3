@@ -327,9 +327,9 @@ ApiWifiNetDevice::ConfigConstRate()
   // Vamos a validar el tipo de variable
   if ( constRateAllowedAttributes.find(tokens.at(1))->second.compare(
         "UintegerValue") == 0) {
-    //bool validvalue = ValidateIsNumber(tokens.at(2));
-    //if (!validvalue) return false;
-    //if ( std::stoi(tokens.at(2)) < 1 ) return false;
+    bool validvalue = ValidateIsNumber(tokens.at(2));
+    if (!validvalue) return false;
+    if ( std::stoi(tokens.at(2)) < 0 ) return false;
     ns3::Config::Set (osconf.str(), ns3::UintegerValue(std::stoi(tokens.at(2))));
   }
   else if ( constRateAllowedAttributes.find(tokens.at(1))->second.compare(
@@ -475,7 +475,6 @@ ApiWifiNetDevice::SendBackMessage (const char * message)
 bool
 ApiWifiNetDevice::ValidateIsNumber (char * value)
 {
-  return true;
   std::stringstream convertor;
   std::string numberString = std::string (value);
   int number;

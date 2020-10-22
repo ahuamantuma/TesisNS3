@@ -137,7 +137,8 @@ MacLow::MacLow ()
     m_promisc (false),
     m_phyMacLowListener (0),
     m_ctsToSelfSupported (false),
-    m_cfAckInfo ()
+    m_cfAckInfo (),
+    m_isLogActivated (false)
 {
   NS_LOG_FUNCTION (this);
 }
@@ -823,6 +824,18 @@ MacLow::NotifyOffNow (void)
 }
 
 void
+MacLow::SetLogActivate (bool value)
+{
+  m_isLogActivated = value;
+}
+
+bool
+MacLow::GetLogActivate() const
+{
+  return m_isLogActivated;
+}
+
+void
 MacLow::ReceiveOk (Ptr<WifiMacQueueItem> mpdu, double rxSnr, WifiTxVector txVector, bool ampduSubframe)
 {
   NS_LOG_FUNCTION (this << *mpdu << rxSnr << txVector);
@@ -834,19 +847,22 @@ MacLow::ReceiveOk (Ptr<WifiMacQueueItem> mpdu, double rxSnr, WifiTxVector txVect
   const WifiMacHeader& hdr = mpdu->GetHeader ();
   Ptr<Packet> packet = mpdu->GetPacket ()->Copy ();
   
-  // AH:
+  // Alejandro:
   // ===========================================================================
-  std::string pktType = hdr.IsCtl() ? "CTL" : hdr.IsMgt() ? "MNG" : "DAT";
-  Mac48Address receiver = Mac48Address::ConvertFrom (GetAddress());
-
-  uint32_t mpduSize = mpdu->GetSize();
-  uint32_t NodeId = m_phy ->GetDevice()->GetNode()->GetId();
-
-  std::clog << "--> RX: N"<< NodeId + 1 <<" ; T:"; 
-  NS_LOG_APPEND_TIME_PREFIX;
-  std::clog <<"; type=" << pktType << ", MPDU="<< mpduSize <<".B, ";
-  std::clog << "                  Received at: ("<< receiver << ")";
-  std::clog << std::endl;
+  if (m_isLogActivated) {
+    std::string pktType = hdr.IsData() ? "DAT" : hdr.IsMgt() ? "MNG" : hdr.IsAck() ? "ACK" : hdr.IsRts() ? "RTS" : hdr.IsCts() ? "CTS" : "CTL";
+    Mac48Address receiver = Mac48Address::ConvertFrom (GetAddress());
+    
+    uint32_t mpduSize = mpdu->GetSize();
+    uint32_t NodeId = m_phy ->GetDevice()->GetNode()->GetId();
+    
+    std::clog << "--> RX: N"<< NodeId + 1 <<" ; T:"; 
+    NS_LOG_APPEND_TIME_PREFIX;
+    std::clog <<";           type=" << pktType << ", MPDU="<< mpduSize <<".B, ";
+    std::clog << "                  Received at: ("<< receiver << ")";
+    std::clog << ", Mode="<<txVector.GetMode();
+    std::clog << std::endl;
+  }
   // ===========================================================================
 
   bool isPrevNavZero = IsNavZero ();

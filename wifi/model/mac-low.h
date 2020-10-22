@@ -509,6 +509,15 @@ public:
    */
   void SetMpduAggregator (const Ptr<MpduAggregator> aggr);
 
+  /**
+   * Get the status of Logging Activate
+   */
+  bool GetLogActivate (void) const;
+  
+  /**
+   * SetLogActivate
+   */
+  void SetLogActivate (bool value);
 
 private:
   /**
@@ -979,6 +988,10 @@ private:
   WifiTxVector m_currentTxVector;        //!< TXVECTOR used for the current packet transmission
 
   CfAckInfo m_cfAckInfo; //!< Info about piggyback Acks used in PCF
+  
+  // Alejandro:
+  bool m_isLogActivated;
+
 };
 
 } //namespace ns3

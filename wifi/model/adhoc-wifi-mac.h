@@ -49,6 +49,10 @@ public:
   void SetLinkUpCallback (Callback<void> linkUp);
   void Enqueue (Ptr<Packet> packet, Mac48Address to);
 
+  // Alejandro:
+  void EnableMacLowLogging ();
+  void DisableMacLowLogging ();
+
 private:
   void Receive (Ptr<WifiMacQueueItem> mpdu);
 };
