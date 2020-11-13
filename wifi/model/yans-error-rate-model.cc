@@ -182,6 +182,8 @@ YansErrorRateModel::GetFecQamBer (double snr, uint64_t nbits,
 double
 YansErrorRateModel::GetChunkSuccessRate (WifiMode mode, WifiTxVector txVector, double snr, uint64_t nbits) const
 {
+  // Alejandro
+  std::clog << "el modelo es YansErrorRateModel" << std::endl;
   NS_LOG_FUNCTION (this << mode << txVector.GetMode () << snr << nbits);
   if (mode.GetModulationClass () == WIFI_MOD_CLASS_ERP_OFDM
       || mode.GetModulationClass () == WIFI_MOD_CLASS_OFDM
@@ -189,6 +191,8 @@ YansErrorRateModel::GetChunkSuccessRate (WifiMode mode, WifiTxVector txVector, d
       || mode.GetModulationClass () == WIFI_MOD_CLASS_VHT
       || mode.GetModulationClass () == WIFI_MOD_CLASS_HE)
     {
+      // Alejandro
+      std::clog << "--> YansError: ConstellationSize: "<<mode.GetConstellationSize ()<<std::endl;
       if (mode.GetConstellationSize () == 2)
         {
           if (mode.GetCodeRate () == WIFI_CODE_RATE_1_2)

@@ -264,11 +264,21 @@ double
 InterferenceHelper::CalculateNoiseInterferenceW (Ptr<Event> event, NiChanges *ni) const
 {
   double noiseInterferenceW = m_firstPower;
+  // Encuentra el evento de 'ruido e interf' por el tiempo de inicio del evento.
+  // EL 'event' es un objeto conteniendo (ppdu, txVector, rxDuration y rxPower)
+    // niChanges = Multimap<Time, niChange>
   auto it = m_niChanges.find (event->GetStartTime ());
+    // GetStartTime = 'Simulator.Now' de cuando se creo ese evento.
+
+  // Se itera desde el incio de este evento hasta el momento actual
   for (; it != m_niChanges.end () && it->first < Simulator::Now (); ++it)
     {
+      // Diferencia entre la potencia del niChange(anterior rxpower al moemento del evento) 
+      // y de la recepcion del ppdu. Deberia ser mayor a 0.
       noiseInterferenceW = it->second.GetPower () - event->GetRxPowerW ();
     }
+
+  // Denuevo se busca iterar desde el inicio de este evento
   it = m_niChanges.find (event->GetStartTime ());
   for (; it != m_niChanges.end () && it->second.GetEvent () != event; ++it);
   ni->emplace (event->GetStartTime (), NiChange (0, event));
@@ -280,7 +290,7 @@ InterferenceHelper::CalculateNoiseInterferenceW (Ptr<Event> event, NiChanges *ni
   NS_ASSERT_MSG (noiseInterferenceW >= 0, "CalculateNoiseInterferenceW returns negative value " << noiseInterferenceW);
   return noiseInterferenceW;
 }
-
+//
 double
 InterferenceHelper::CalculateChunkSuccessRate (double snir, Time duration, WifiMode mode, WifiTxVector txVector) const
 {
@@ -317,7 +327,7 @@ InterferenceHelper::CalculatePayloadPer (Ptr<const Event> event, NiChanges *ni, 
   double psr = 1.0; /* Packet Success Rate */
   auto j = ni->begin ();
   Time previous = j->first;
-  WifiMode payloadMode = event->GetTxVector ().GetMode ();
+  //WifiMode payloadMode = event->GetTxVector ().GetMode ();
   WifiPreamble preamble = txVector.GetPreambleType ();
   Time phyHeaderStart = j->first + WifiPhy::GetPhyPreambleDuration (txVector); //PPDU start time + preamble
   Time phyLSigHeaderEnd = phyHeaderStart + WifiPhy::GetPhyHeaderDuration (txVector); //PPDU start time + preamble + L-SIG
@@ -333,17 +343,22 @@ InterferenceHelper::CalculatePayloadPer (Ptr<const Event> event, NiChanges *ni, 
       NS_LOG_DEBUG ("previous= " << previous << ", current=" << current);
       NS_ASSERT (current >= previous);
       double snr = CalculateSnr (powerW, noiseInterferenceW, txVector);
+      // Alejandro:
+      //std::clog << "--> Interf params: previous= " << previous << ", current=" << current << ", windowStart=" <<windowStart << ", windowEnd="<< windowEnd << std::endl;
+        // Modifying DEBUG to clog.
       //Case 1: Both previous and current point to the windowed payload
       if (previous >= windowStart)
         {
           psr *= CalculatePayloadChunkSuccessRate (snr, Min (windowEnd, current) - previous, txVector);
-          NS_LOG_DEBUG ("Both previous and current point to the windowed payload: mode=" << payloadMode << ", psr=" << psr);
+          // Alejandro Modified
+          //std::clog << "Both previous and current point to the windowed payload: mode=" << payloadMode << ", psr=" << psr << std::endl;
         }
       //Case 2: previous is before windowed payload and current is in the windowed payload
       else if (current >= windowStart)
         {
           psr *= CalculatePayloadChunkSuccessRate (snr, Min (windowEnd, current) - windowStart, txVector);
-          NS_LOG_DEBUG ("previous is before windowed payload and current is in the windowed payload: mode=" << payloadMode << ", psr=" << psr);
+          // Alejandro Modified
+          //std::clog << "previous is before windowed payload and current is in the windowed payload: mode=" << payloadMode << ", psr=" << psr << std::endl;
         }
       noiseInterferenceW = j->second.GetPower () - powerW;
       previous = j->first;
@@ -484,6 +499,7 @@ InterferenceHelper::CalculateHtPhyHeaderPer (Ptr<const Event> event, NiChanges *
     {
       //mode for PHY header fields sent with HT modulation
       mcsHeaderMode = WifiPhy::GetHtPhyHeaderMode ();
+      // std::clog << "-> verify PhyHeaderMode: "<< mcsHeaderMode << std::endl;
     }
   else if (preamble == WIFI_PREAMBLE_VHT_SU || preamble == WIFI_PREAMBLE_VHT_MU)
     {
@@ -505,18 +521,22 @@ InterferenceHelper::CalculateHtPhyHeaderPer (Ptr<const Event> event, NiChanges *
   while (++j != ni->end ())
     {
       Time current = j->first;
-      NS_LOG_DEBUG ("previous= " << previous << ", current=" << current);
+      // Alejandro Modified:
+      //std::clog << "--> CalculatePhyHeaderPer: previous= " << previous << ", current=" << current << ", phyPayloadStart="<<phyPayloadStart.GetSeconds() << std::endl;
       NS_ASSERT (current >= previous);
       double snr = CalculateSnr (powerW, noiseInterferenceW, txVector);
       //Case 1: previous and current after payload start: nothing to do
       if (previous >= phyPayloadStart)
         {
+          //std::clog << "-> Case 1" << std::endl;
           psr *= 1;
           NS_LOG_DEBUG ("Case 1 - previous and current after payload start: nothing to do");
         }
       //Case 2: previous is in training or in SIG-B: non-HT will not enter here since it didn't enter in the last two and they are all the same for non-HT
       else if (previous >= phyTrainingSymbolsStart)
         {
+          // 
+          //std::clog << "-> Case 2" << std::endl;
           NS_ASSERT ((preamble != WIFI_PREAMBLE_LONG) && (preamble != WIFI_PREAMBLE_SHORT));
           //Case 2a: current after payload start
           if (current >= phyPayloadStart)
@@ -534,6 +554,7 @@ InterferenceHelper::CalculateHtPhyHeaderPer (Ptr<const Event> event, NiChanges *
       //Case 3: previous is in HT-SIG or SIG-A: non-HT will not enter here since it didn't enter in the last two and they are all the same for non-HT
       else if (previous >= phyLSigHeaderEnd)
         {
+          //std::clog << "-> Case 3" << std::endl;
           NS_ASSERT ((preamble != WIFI_PREAMBLE_LONG) && (preamble != WIFI_PREAMBLE_SHORT));
           //Case 3a: current after payload start
           if (current >= phyPayloadStart)
@@ -592,6 +613,7 @@ InterferenceHelper::CalculateHtPhyHeaderPer (Ptr<const Event> event, NiChanges *
       //Case 4: previous in L-SIG: HT GF will not reach here because it will execute the previous if and exit
       else if (previous >= phyHeaderStart)
         {
+          //std::clog << "-> Case 4" << std::endl;
           NS_ASSERT (preamble != WIFI_PREAMBLE_HT_GF);
           //Case 4a: current after payload start
           if (current >= phyPayloadStart)
@@ -661,6 +683,7 @@ InterferenceHelper::CalculateHtPhyHeaderPer (Ptr<const Event> event, NiChanges *
       //Case 5: previous is in the preamble works for all cases
       else
         {
+          //std::clog << "-> Case 5" << std::endl;
           //Case 5a: current after payload start
           if (current >= phyPayloadStart)
             {
@@ -680,8 +703,11 @@ InterferenceHelper::CalculateHtPhyHeaderPer (Ptr<const Event> event, NiChanges *
               //Case 5aiii: HT formats
               else
                 {
+                  //std::clog << "-> Case 5aiii" << std::endl;
                   psr *= CalculateChunkSuccessRate (snr, phyPayloadStart - phyLSigHeaderEnd, mcsHeaderMode, txVector);
                   NS_LOG_DEBUG ("Case 5aiii - previous is in the preamble and current is after payload start: mcs mode=" << mcsHeaderMode << ", non-HT mode=" << headerMode << ", psr=" << psr);
+                
+                  //std::clog << "-> Case 5aiii - previous is in the preamble and current is after payload start: mcs mode=" << mcsHeaderMode << ", non-HT mode=" << headerMode << ", psr=" << psr << std::endl;
                 }
             }
           //Case 5b: current is in training or in SIG-B. Non-HT will not come here since it went in previous if or if the previous if is not true this will be not true

@@ -34,6 +34,7 @@
 
 // Alejandro:
 #include "ns3/boolean.h"
+#include <iomanip>
 
 namespace ns3 {
 
@@ -123,25 +124,34 @@ YansWifiChannel::Send (Ptr<YansWifiPhy> sender, Ptr<const WifiPpdu> ppdu, double
               dstNode = dstNetDevice->GetNode ()->GetId ();
             }
           
-          // AH:
+          // Alejandro:
           // ===================================================================
           // Considerando que no hay agregacion, se elige el primer psdu de la lista
           WifiMacHeader hdr = ppdu->GetPsdu()->GetHeader(0);
           
           if (m_isLogActivated) {
+            // Tomamos el tiempo actual:
+            std::ostringstream tiempoactual;
+              //tiempoactual << std::setprecision (5);
+            tiempoactual << Simulator::Now().As(Time::S);
+
             std::string pktType = hdr.IsData() ? "DAT" : hdr.IsMgt() ? "MNG" : hdr.IsAck() ? "ACK" : hdr.IsRts() ? "RTS" : hdr.IsCts() ? "CTS" : "CTL";
-            Mac48Address receiver = ppdu->GetPsdu()->GetAddr1();
-            Mac48Address transmitter = ppdu->GetPsdu()->GetAddr2();
-            //WifiPreamble preamble = ppdu->GetTxVector().GetPreambleType();         
+            Mac48Address addr1 = ppdu->GetPsdu()->GetAddr1();
+              //Mac48Address addr2 = ppdu->GetPsdu()->GetAddr2();
+            WifiPreamble preamble = ppdu->GetTxVector().GetPreambleType();
+            int64_t txduration = ppdu->GetTxDuration().GetMicroSeconds();
+            WifiMode payloadMode = ppdu->GetTxVector().GetMode();
 
             uint32_t mpduSize = ppdu->GetPsdu()->GetSize();
-            uint32_t srcNodeId = sender->GetDevice()->GetNode()->GetId();          
+            uint32_t srcNodeId = sender->GetDevice()->GetNode()->GetId();
+            Mac48Address senderMAC = Mac48Address::ConvertFrom(sender->GetDevice()->GetAddress());
 
-            std::clog << "--> TX: N"<<srcNodeId + 1 <<" ; T:";
-            NS_LOG_APPEND_TIME_PREFIX;
-            std::clog <<": type="<< pktType << ",           MPDU="<<mpduSize<<".B, ";
-            std::clog << "From: (" << transmitter << "), To: ("<< receiver <<")";
-            std::clog << ", Mode="<<ppdu->GetTxVector().GetMode();
+            std::clog << "--> "<< tiempoactual.str() << ": TX N"<<srcNodeId + 1 <<": ";
+            std::clog << "Type="<< pktType << ",           MPDU=" << mpduSize <<".B, ";
+            std::clog << "DAddr=" << addr1 << ", TxDuration="<<txduration<<"us, ";
+            std::clog << "TxDelay="<<delay.GetNanoSeconds()<<"ns, ";
+            std::clog << "PreambleType="<<preamble <<", PayloadMode="<<payloadMode;
+            std::clog << ", sender: " <<senderMAC;
             std::clog << std::endl;
           }
           // ===================================================================

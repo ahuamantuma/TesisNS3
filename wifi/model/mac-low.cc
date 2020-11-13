@@ -850,17 +850,22 @@ MacLow::ReceiveOk (Ptr<WifiMacQueueItem> mpdu, double rxSnr, WifiTxVector txVect
   // Alejandro:
   // ===========================================================================
   if (m_isLogActivated) {
+    // Tomamos el tiempo actual:
+    std::ostringstream tiempoactual;
+    //tiempoactual << std::setprecision (5);
+    tiempoactual << Simulator::Now().As(Time::S);
+
     std::string pktType = hdr.IsData() ? "DAT" : hdr.IsMgt() ? "MNG" : hdr.IsAck() ? "ACK" : hdr.IsRts() ? "RTS" : hdr.IsCts() ? "CTS" : "CTL";
-    Mac48Address receiver = Mac48Address::ConvertFrom (GetAddress());
-    
+    Mac48Address daddr = mpdu->GetDestinationAddress();
+    double timestamp = mpdu->GetTimeStamp().GetSeconds();
+
     uint32_t mpduSize = mpdu->GetSize();
     uint32_t NodeId = m_phy ->GetDevice()->GetNode()->GetId();
     
-    std::clog << "--> RX: N"<< NodeId + 1 <<" ; T:"; 
-    NS_LOG_APPEND_TIME_PREFIX;
-    std::clog <<";           type=" << pktType << ", MPDU="<< mpduSize <<".B, ";
-    std::clog << "                  Received at: ("<< receiver << ")";
-    std::clog << ", Mode="<<txVector.GetMode();
+    std::clog << "--> "<< tiempoactual.str() << ": RX N"<< NodeId + 1 <<": ";
+    std::clog << "          Type=" << pktType << ", MPDU="<< mpduSize <<".B, ";
+    std::clog << "DAddr="<< daddr << ", Timestamp="<<timestamp << "s, ";
+    std::clog << "Mode="<<txVector.GetMode();
     std::clog << std::endl;
   }
   // ===========================================================================

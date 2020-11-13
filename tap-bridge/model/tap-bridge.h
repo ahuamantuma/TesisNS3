@@ -32,6 +32,8 @@
 #include "ns3/ptr.h"
 #include "ns3/mac48-address.h"
 #include "ns3/unix-fd-reader.h"
+// Alejandro
+//#include "ns3/random-variable-stream.h"
 
 namespace ns3 {
 
@@ -328,6 +330,9 @@ private:
    */
   NetDevice::PromiscReceiveCallback m_promiscRxCallback;
 
+  // Alejandro
+  //Ptr<UniformRandomVariable> m_uniformRandomVariable;
+
   /**
    * Pointer to the (ghost) Node to which we are connected.
    */
@@ -454,6 +459,9 @@ private:
    * Callbacks to fire if the link changes state (up or down).
    */
   TracedCallback<> m_linkChangeCallbacks;
+  
+  // Alejandro
+  //Ptr<UniformRandomVariable> m_uniformRandomVariable;
 };
 
 } // namespace ns3
