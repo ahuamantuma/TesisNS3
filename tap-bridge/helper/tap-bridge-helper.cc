@@ -63,6 +63,10 @@ TapBridgeHelper::Install (Ptr<Node> node, Ptr<NetDevice> nd)
   NS_LOG_FUNCTION (node << nd);
   NS_LOG_LOGIC ("Install TapBridge on node " << node->GetId () << " bridging net device " << nd);
 
+  // AH:
+
+  //NS_LOG_UNCOND ("--> AH: MAC Inicial: "<< nd->GetAddress());
+
   Ptr<TapBridge> bridge = m_deviceFactory.Create<TapBridge> ();
   node->AddDevice (bridge);
   bridge->SetBridgedNetDevice (nd);

@@ -96,7 +96,16 @@ public:
    * \return the number of stream indices assigned by this model
    */
   int64_t AssignStreams (int64_t stream);
+  
+  /**
+   * Get the status of Logging Activate
+   */
+  bool GetLogActivate (void) const;
 
+  /**
+   * SetLogActivate
+   */
+  void SetLogActivate (bool value);
 
 private:
   /**
@@ -118,6 +127,7 @@ private:
   PhyList m_phyList;                   //!< List of YansWifiPhys connected to this YansWifiChannel
   Ptr<PropagationLossModel> m_loss;    //!< Propagation loss model
   Ptr<PropagationDelayModel> m_delay;  //!< Propagation delay model
+  bool m_isLogActivated;
 };
 
 } //namespace ns3

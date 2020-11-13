@@ -18,10 +18,6 @@
  * Author: Mathieu Lacage, <mathieu.lacage@sophia.inria.fr>
  */
 
-// AH:
-#include <chrono>
-#include <ctime>
-
 #include "ns3/simulator.h"
 #include "ns3/log.h"
 #include "ns3/pointer.h"
@@ -35,6 +31,10 @@
 #include "wifi-utils.h"
 #include "wifi-ppdu.h"
 #include "wifi-psdu.h"
+
+// Alejandro:
+#include "ns3/boolean.h"
+#include <iomanip>
 
 namespace ns3 {
 
@@ -57,6 +57,11 @@ YansWifiChannel::GetTypeId (void)
                    PointerValue (),
                    MakePointerAccessor (&YansWifiChannel::m_delay),
                    MakePointerChecker<PropagationDelayModel> ())
+    .AddAttribute ("LogActivated", "Enable Logging",
+                   BooleanValue(false),
+                   MakeBooleanAccessor (&YansWifiChannel::GetLogActivate,
+                                        &YansWifiChannel::SetLogActivate),
+                   MakeBooleanChecker() )
   ;
   return tid;
 }
@@ -119,23 +124,38 @@ YansWifiChannel::Send (Ptr<YansWifiPhy> sender, Ptr<const WifiPpdu> ppdu, double
               dstNode = dstNetDevice->GetNode ()->GetId ();
             }
           
-          // AH:
-          WifiMacType type = ppdu->GetPsdu()->GetHeader(0).GetType();
-          Ptr<NetDevice> wifinet = DynamicCast<NetDevice> (sender->GetDevice());
-          uint32_t srcNode = wifinet->GetNode()->GetId();
+          // Alejandro:
+          // ===================================================================
+          // Considerando que no hay agregacion, se elige el primer psdu de la lista
+          WifiMacHeader hdr = ppdu->GetPsdu()->GetHeader(0);
           
-          uint32_t mpduSize = ppdu->GetPsdu()->GetSize();
-          
-          
+          if (m_isLogActivated) {
+            // Tomamos el tiempo actual:
+            std::ostringstream tiempoactual;
+              //tiempoactual << std::setprecision (5);
+            tiempoactual << Simulator::Now().As(Time::S);
 
-          //double t_envie = Simulator::Now().GetSeconds();
-          
-          std::clog << "--> AH_TX: N"<<srcNode + 1 <<",  T:";
-          NS_LOG_APPEND_TIME_PREFIX;
-          std::clog <<"; type="<< type << " PktSize: "<<mpduSize<<".B, MAC:" <<wifinet->GetAddress();
-          std::clog <<", delay: "<<delay <<std::endl;
+            std::string pktType = hdr.IsData() ? "DAT" : hdr.IsMgt() ? "MNG" : hdr.IsAck() ? "ACK" : hdr.IsRts() ? "RTS" : hdr.IsCts() ? "CTS" : "CTL";
+            Mac48Address addr1 = ppdu->GetPsdu()->GetAddr1();
+              //Mac48Address addr2 = ppdu->GetPsdu()->GetAddr2();
+            WifiPreamble preamble = ppdu->GetTxVector().GetPreambleType();
+            int64_t txduration = ppdu->GetTxDuration().GetMicroSeconds();
+            WifiMode payloadMode = ppdu->GetTxVector().GetMode();
 
-          
+            uint32_t mpduSize = ppdu->GetPsdu()->GetSize();
+            uint32_t srcNodeId = sender->GetDevice()->GetNode()->GetId();
+            Mac48Address senderMAC = Mac48Address::ConvertFrom(sender->GetDevice()->GetAddress());
+
+            std::clog << "--> "<< tiempoactual.str() << ": TX N"<<srcNodeId + 1 <<": ";
+            std::clog << "Type="<< pktType << ",           MPDU=" << mpduSize <<".B, ";
+            std::clog << "DAddr=" << addr1 << ", TxDuration="<<txduration<<"us, ";
+            std::clog << "TxDelay="<<delay.GetNanoSeconds()<<"ns, ";
+            std::clog << "PreambleType="<<preamble <<", PayloadMode="<<payloadMode;
+            std::clog << ", sender: " <<senderMAC;
+            std::clog << std::endl;
+          }
+          // ===================================================================
+
           Simulator::ScheduleWithContext (dstNode,
                                           delay, &YansWifiChannel::Receive,
                                           (*i), copy, rxPowerDbm);
@@ -186,6 +206,18 @@ YansWifiChannel::AssignStreams (int64_t stream)
   int64_t currentStream = stream;
   currentStream += m_loss->AssignStreams (stream);
   return (currentStream - stream);
+}
+
+void
+YansWifiChannel::SetLogActivate (bool value)
+{
+  m_isLogActivated = value;
+}
+
+bool
+YansWifiChannel::GetLogActivate() const
+{
+  return m_isLogActivated;
 }
 
 } //namespace ns3

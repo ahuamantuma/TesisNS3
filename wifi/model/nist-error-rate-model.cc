@@ -276,6 +276,8 @@ NistErrorRateModel::GetFec1024QamBer (double snr, uint64_t nbits,
 double
 NistErrorRateModel::GetChunkSuccessRate (WifiMode mode, WifiTxVector txVector, double snr, uint64_t nbits) const
 {
+  // Alejandro:
+  //std::clog << "el modelo es NistErrorRateModel" << std::endl;
   NS_LOG_FUNCTION (this << mode << txVector.GetMode () << snr << nbits);
   if (mode.GetModulationClass () == WIFI_MOD_CLASS_ERP_OFDM
       || mode.GetModulationClass () == WIFI_MOD_CLASS_OFDM
@@ -283,6 +285,8 @@ NistErrorRateModel::GetChunkSuccessRate (WifiMode mode, WifiTxVector txVector, d
       || mode.GetModulationClass () == WIFI_MOD_CLASS_VHT
       || mode.GetModulationClass () == WIFI_MOD_CLASS_HE)
     {
+      // Alejandro:
+      //std::clog << "--> NistError: ConstellationSize: "<<mode.GetConstellationSize ()<<std::endl;
       if (mode.GetConstellationSize () == 2)
         {
           if (mode.GetCodeRate () == WIFI_CODE_RATE_1_2)
@@ -338,6 +342,8 @@ NistErrorRateModel::GetChunkSuccessRate (WifiMode mode, WifiTxVector txVector, d
             }
           else if (mode.GetCodeRate () == WIFI_CODE_RATE_5_6)
             {
+              // Alejandro:
+              //std::clog << "-> Constellation 64 y code 5-6" << std::endl;
               return GetFec64QamBer (snr,
                                      nbits,
                                      5); //b value

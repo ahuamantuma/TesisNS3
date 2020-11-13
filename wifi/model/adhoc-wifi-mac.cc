@@ -214,4 +214,16 @@ AdhocWifiMac::Receive (Ptr<WifiMacQueueItem> mpdu)
   RegularWifiMac::Receive (mpdu);
 }
 
+// Alejandro:
+void
+AdhocWifiMac::EnableMacLowLogging ()
+{
+  m_low->SetLogActivate (true);
+}
+void
+AdhocWifiMac::DisableMacLowLogging ()
+{
+  m_low->SetLogActivate (false);
+}
+
 } //namespace ns3

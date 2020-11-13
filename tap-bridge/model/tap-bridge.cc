@@ -18,8 +18,11 @@
 
 #include "tap-bridge.h"
 #include "tap-encode-decode.h"
-//Added by AH:
+//Added by Alejandro:
 #include "tap-bridge-api-wifinetdevice.h"
+//#include "ns3/random-variable-stream.h"
+//#include "ns3/double.h"
+#include <random>
 
 #include "ns3/node.h"
 #include "ns3/channel.h"
@@ -151,6 +154,7 @@ TapBridge::TapBridge ()
     m_fdReader (0),
     m_ns3AddressRewritten (false),
     m_linkUp(false)
+//    m_uniformRandomVariable (CreateObject<UniformRandomVariable> ())
 {
   NS_LOG_FUNCTION_NOARGS ();
   m_packetBuffer = new uint8_t[65536];
@@ -428,6 +432,9 @@ TapBridge::CreateTap (void)
       //
       Address address = nd->GetAddress ();
       Mac48Address mac48Address = Mac48Address::ConvertFrom (address);
+      
+      // AH:
+      //NS_LOG_UNCOND ("--> AH: Creating TAP MAC: "<<mac48Address);
 
       //
       // The device-name is something we may want the system to make up in 
@@ -693,7 +700,23 @@ TapBridge::ReadCallback (uint8_t *buf, ssize_t len)
   
   NS_LOG_INFO ("TapBridge::ReadCallback(): Received packet on node " << m_nodeId);
   NS_LOG_INFO ("TapBridge::ReadCallback(): Scheduling handler");
-  Simulator::ScheduleWithContext (m_nodeId, Seconds (0.0), MakeEvent (&TapBridge::ForwardToBridgedDevice, this, buf, len));
+  // Alejandro:
+  // Simular un delay variable uniforme para MCS7 802.11n 2.4GHz
+  //double min = 0.0;
+  //double max = 0.1;
+  //m_uniformRandomVariable->SetAttribute ("Min", DoubleValue (min));
+  //m_uniformRandomVariable->SetAttribute ("Max", DoubleValue (max));
+  //double delay = m_uniformRandomVariable->GetValue ();
+  
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_real_distribution<> dis(0.0, 0.3);
+  
+  double delay = dis(gen);
+
+  //std::clog << "random delay: " << delay << std::endl;
+  //Simulator::ScheduleWithContext (m_nodeId, Seconds (), MakeEvent (&TapBridge::ForwardToBridgedDevice, this, buf, len));
+  Simulator::ScheduleWithContext (m_nodeId, MilliSeconds ( delay ), MakeEvent (&TapBridge::ForwardToBridgedDevice, this, buf, len));
 }
 
 void

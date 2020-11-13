@@ -23,9 +23,6 @@
 
 //AH:
 #include "ns3/node.h"
-#include <iostream>
-#include <iomanip>
-#include "ns3/log-macros-enabled.h"
 
 #include "ns3/simulator.h"
 #include "ns3/log.h"
@@ -140,7 +137,8 @@ MacLow::MacLow ()
     m_promisc (false),
     m_phyMacLowListener (0),
     m_ctsToSelfSupported (false),
-    m_cfAckInfo ()
+    m_cfAckInfo (),
+    m_isLogActivated (false)
 {
   NS_LOG_FUNCTION (this);
 }
@@ -826,6 +824,18 @@ MacLow::NotifyOffNow (void)
 }
 
 void
+MacLow::SetLogActivate (bool value)
+{
+  m_isLogActivated = value;
+}
+
+bool
+MacLow::GetLogActivate() const
+{
+  return m_isLogActivated;
+}
+
+void
 MacLow::ReceiveOk (Ptr<WifiMacQueueItem> mpdu, double rxSnr, WifiTxVector txVector, bool ampduSubframe)
 {
   NS_LOG_FUNCTION (this << *mpdu << rxSnr << txVector);
@@ -837,30 +847,28 @@ MacLow::ReceiveOk (Ptr<WifiMacQueueItem> mpdu, double rxSnr, WifiTxVector txVect
   const WifiMacHeader& hdr = mpdu->GetHeader ();
   Ptr<Packet> packet = mpdu->GetPacket ()->Copy ();
   
-  // AH:
-  WifiMacType type = hdr.GetType();
-  Ptr<WifiNetDevice> wifinet = DynamicCast<WifiNetDevice> (m_phy ->GetDevice());
+  // Alejandro:
+  // ===========================================================================
+  if (m_isLogActivated) {
+    // Tomamos el tiempo actual:
+    std::ostringstream tiempoactual;
+    //tiempoactual << std::setprecision (5);
+    tiempoactual << Simulator::Now().As(Time::S);
 
-  Ptr<Node> nodo = wifinet->GetNode(); 
-  uint32_t nodo_id = nodo->GetId();
+    std::string pktType = hdr.IsData() ? "DAT" : hdr.IsMgt() ? "MNG" : hdr.IsAck() ? "ACK" : hdr.IsRts() ? "RTS" : hdr.IsCts() ? "CTS" : "CTL";
+    Mac48Address daddr = mpdu->GetDestinationAddress();
+    double timestamp = mpdu->GetTimeStamp().GetSeconds();
 
-  //double t_recibi = Simulator::Now().GetSeconds();
-
-  uint32_t mpduSize = mpdu->GetSize();
-
-  //std::setprecision(10);
-  //NS_LOG_APPEND_TIME_PREFIX;
-  //NS_LOG_APPEND_NODE_PREFIX;
-  std::clog << "--> AH_RX: N"<< nodo_id + 1 <<",  T:"; 
-  NS_LOG_APPEND_TIME_PREFIX;
-  std::clog <<"; type=" << type << ",         PktSize = "<< mpduSize <<".B , MAC:"<< GetAddress();
-  std::clog <<" ( " << wifinet->GetAddress()<< ")"<< std::endl;
-  
-
-  //NS_LOG_UNCOND ("--> AH_RX: N"<< nodo_id + 1 <<",  T:"<< t_recibi <<" seg,             type=" << type);
-  //bool isdata = hdr.IsData();
-  
-  //NS_LOG_UNCOND ()
+    uint32_t mpduSize = mpdu->GetSize();
+    uint32_t NodeId = m_phy ->GetDevice()->GetNode()->GetId();
+    
+    std::clog << "--> "<< tiempoactual.str() << ": RX N"<< NodeId + 1 <<": ";
+    std::clog << "          Type=" << pktType << ", MPDU="<< mpduSize <<".B, ";
+    std::clog << "DAddr="<< daddr << ", Timestamp="<<timestamp << "s, ";
+    std::clog << "Mode="<<txVector.GetMode();
+    std::clog << std::endl;
+  }
+  // ===========================================================================
 
   bool isPrevNavZero = IsNavZero ();
   NS_LOG_DEBUG ("duration/id=" << hdr.GetDuration ());

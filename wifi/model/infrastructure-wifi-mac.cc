@@ -20,6 +20,8 @@
 
 #include "infrastructure-wifi-mac.h"
 #include "ns3/log.h"
+// Alejandro:
+#include "mac-low.h"
 
 namespace ns3 {
 
@@ -78,6 +80,18 @@ bool
 InfrastructureWifiMac::GetPcfSupported () const
 {
   return m_pcfSupported;
+}
+
+// Alejandro:
+void
+InfrastructureWifiMac::EnableMacLowLogging ()
+{
+  m_low->SetLogActivate (true);
+}
+void
+InfrastructureWifiMac::DisableMacLowLogging ()
+{
+  m_low->SetLogActivate (false);
 }
 
 } //namespace ns3

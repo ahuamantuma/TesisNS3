@@ -1833,6 +1833,8 @@ WifiPhy::GetPhyTrainingSymbolDuration (WifiTxVector txVector)
   switch (txVector.GetPreambleType ())
     {
     case WIFI_PREAMBLE_HT_MF:
+      // AH:
+       //NS_LOG_UNCOND("HT_MF_PREAMBLE: "<< MicroSeconds (4 + (4 * Ndltf) + (4 * Neltf)));
       return MicroSeconds (4 + (4 * Ndltf) + (4 * Neltf));
     case WIFI_PREAMBLE_HT_GF:
       return MicroSeconds ((4 * Ndltf) + (4 * Neltf));
@@ -2418,6 +2420,10 @@ WifiPhy::CalculateTxDuration (uint32_t size, WifiTxVector txVector, uint16_t fre
 {
   Time duration = CalculatePhyPreambleAndHeaderDuration (txVector)
     + GetPayloadDuration (size, txVector, frequency);
+  // AH:
+  //NS_LOG_APPEND_TIME_PREFIX;
+  //std::clog << "; PHY HEADER: "<< CalculatePhyPreambleAndHeaderDuration (txVector) << ", Payload Duration: "<<GetPayloadDuration (size, txVector, frequency);
+  //std::clog << std::endl;
   return duration;
 }
 
@@ -2561,7 +2567,9 @@ WifiPhy::Send (Ptr<const WifiPsdu> psdu, WifiTxVector txVector)
       NotifyTxDrop (psdu);
       return;
     }
-
+  
+  // AH:
+  //std::clog << "--> N"<< m_device->GetNode()->GetId()+1<<", ";
   Time txDuration = CalculateTxDuration (psdu->GetSize (), txVector, GetFrequency ());
   NS_ASSERT (txDuration.IsStrictlyPositive ());
 
@@ -2644,6 +2652,8 @@ WifiPhy::StartReceiveHeader (Ptr<Event> event)
         {
           //Schedule end of non-HT PHY header
           Time remainingPreambleAndNonHtHeaderDuration = GetPhyPreambleDuration (txVector) + GetPhyHeaderDuration (txVector) - GetPreambleDetectionDuration ();
+          // AH:
+          //NS_LOG_UNCOND ("--> AH: PreambleDuration="<<GetPhyPreambleDuration (txVector).GetMicroSeconds());
           m_state->SwitchMaybeToCcaBusy (remainingPreambleAndNonHtHeaderDuration);
           m_endPhyRxEvent = Simulator::Schedule (remainingPreambleAndNonHtHeaderDuration, &WifiPhy::ContinueReceiveHeader, this, event);
         }
@@ -2850,6 +2860,7 @@ WifiPhy::MaybeCcaBusyDuration ()
 void
 WifiPhy::StartReceivePayload (Ptr<Event> event)
 {
+  // Empieza primero verificando si puede recibir la cabecera
   NS_LOG_FUNCTION (this << *event);
   NS_ASSERT (m_endPhyRxEvent.IsExpired ());
   NS_ASSERT (m_endRxEvent.IsExpired ());
@@ -2859,8 +2870,11 @@ WifiPhy::StartReceivePayload (Ptr<Event> event)
   if (txMode.GetModulationClass () >= WIFI_MOD_CLASS_HT)
     {
       InterferenceHelper::SnrPer snrPer;
+      // Obtiene el PER para la cabecera
       snrPer = m_interference.CalculateHtPhyHeaderSnrPer (event);
-      NS_LOG_DEBUG ("snr(dB)=" << RatioToDb (snrPer.snr) << ", per=" << snrPer.per);
+      //std::clog << "--> StartReceivePayload: snr(dB)=" << RatioToDb (snrPer.snr) << ", per=" << snrPer.per << std::endl;
+      // Verifica si puede recibir inicialmente el payload comparando el PER
+      // del HTPhyHeader
       canReceivePayload = (m_random->GetValue () > snrPer.per);
     }
   else
@@ -2888,6 +2902,9 @@ WifiPhy::StartReceivePayload (Ptr<Event> event)
         }
       else
         {
+          // Alejandro:
+          //std::clog << "--> RX: Pude recibir la cabecera" << std::endl;
+          //
           m_state->SwitchToRx (payloadDuration);
           m_endRxEvent = Simulator::Schedule (payloadDuration, &WifiPhy::EndReceive, this, event);
           NS_LOG_DEBUG ("Receiving PSDU");
@@ -2923,6 +2940,8 @@ WifiPhy::EndReceive (Ptr<Event> event)
   SignalNoiseDbm signalNoise;
 
   Ptr<const WifiPsdu> psdu = event->GetPsdu ();
+  // el relative Start se modifica solo en A-MPDU, se va sumando con la
+  // duracion de cada mpdu
   Time relativeStart = NanoSeconds (0);
   bool receptionOkAtLeastForOneMpdu = false;
   std::pair<bool, SignalNoiseDbm> rxInfo;
@@ -2938,6 +2957,7 @@ WifiPhy::EndReceive (Ptr<Event> event)
       double totalAmpduNumSymbols = 0.0;
       for (size_t i = 0; i < nMpdus && mpdu != psdu->end (); ++mpdu)
         {
+          // Es AMPDU:
           Time mpduDuration = GetPayloadDuration (psdu->GetAmpduSubframeSize (i), txVector,
                                                   GetFrequency (), mpdutype, true, totalAmpduSize, totalAmpduNumSymbols);
           remainingAmpduDuration -= mpduDuration;
@@ -2952,6 +2972,8 @@ WifiPhy::EndReceive (Ptr<Event> event)
                         ", Signal/Noise: " << rxInfo.second.signal << "/" << rxInfo.second.noise << "dBm");
           signalNoise = rxInfo.second; //same information for all MPDUs
           statusPerMpdu.push_back (rxInfo.first);
+          
+          // 'Or' para que sea true si almenos algun MPDU fue recibido correctamente
           receptionOkAtLeastForOneMpdu |= rxInfo.first;
 
           //Prepare next iteration
@@ -2965,11 +2987,13 @@ WifiPhy::EndReceive (Ptr<Event> event)
       rxInfo = GetReceptionStatus (psdu, event, relativeStart, psduDuration);
       signalNoise = rxInfo.second; //same information for all MPDUs
       statusPerMpdu.push_back (rxInfo.first);
+      // Como es sin agregaciones, este valor es para el unico MPDU
       receptionOkAtLeastForOneMpdu = rxInfo.first;
     }
 
   NotifyRxEnd (psdu);
 
+  // Sin AMPDU es true si el payload del paquete se pudo recibir
   if (receptionOkAtLeastForOneMpdu)
     {
       NotifyMonitorSniffRx (psdu, GetFrequency (), txVector, signalNoise, statusPerMpdu);
@@ -2992,9 +3016,12 @@ WifiPhy::GetReceptionStatus (Ptr<const WifiPsdu> psdu, Ptr<Event> event, Time re
   InterferenceHelper::SnrPer snrPer;
   snrPer = m_interference.CalculatePayloadSnrPer (event, std::make_pair (relativeMpduStart, relativeMpduStart + mpduDuration));
 
-  NS_LOG_DEBUG ("mode=" << (event->GetTxVector ().GetMode ().GetDataRate (event->GetTxVector ())) <<
-                ", snr(dB)=" << RatioToDb (snrPer.snr) << ", per=" << snrPer.per << ", size=" << psdu->GetSize () <<
-                ", relativeStart = " << relativeMpduStart.GetNanoSeconds () << "ns, duration = " << mpduDuration.GetNanoSeconds () << "ns");
+  // Alejandro:
+  // Modifed, Antes era NS_LOG_DEBUG
+  //std::clog << "--> GetReceptionStatus: DataRate=" << (event->GetTxVector ().GetMode ().GetDataRate (event->GetTxVector ())) <<
+  //              ", snr(dB)=" << RatioToDb (snrPer.snr) << ", per=" << snrPer.per << ", size=" << psdu->GetSize () <<
+  //              ", relativeStart = " << relativeMpduStart.GetNanoSeconds () << "ns, duration = " << mpduDuration.GetNanoSeconds () << "ns"
+  //              << std::endl;
 
   // There are two error checks: PER and receive error model check.
   // PER check models is typical for Wi-Fi and is based on signal modulation;
@@ -3002,16 +3029,19 @@ WifiPhy::GetReceptionStatus (Ptr<const WifiPsdu> psdu, Ptr<Event> event, Time re
   // it indicates that the packet is corrupt, drop the packet.
   SignalNoiseDbm signalNoise;
   signalNoise.signal = WToDbm (event->GetRxPowerW ());
+  // Obtiene el ruido de del snr a la inversa por la senhal
   signalNoise.noise = WToDbm (event->GetRxPowerW () / snrPer.snr);
   if (m_random->GetValue () > snrPer.per &&
       !(m_postReceptionErrorModel && m_postReceptionErrorModel->IsCorrupt (psdu->GetPacket ()->Copy ())))
     {
-      NS_LOG_DEBUG ("Reception succeeded: " << psdu);
+      // Alejandro
+      //std::clog << "--> GetReceptionStatus: Reception succeeded: " << psdu << std::endl;
       return std::make_pair (true, signalNoise);
     }
   else
     {
-      NS_LOG_DEBUG ("Reception failed: " << psdu);
+      // Alejandro
+      //std::clog << "--> GetReceptionStatus: Reception failed: " << psdu << std::endl;
       return std::make_pair (false, signalNoise);
     }
 }

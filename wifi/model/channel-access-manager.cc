@@ -412,6 +412,8 @@ ChannelAccessManager::GetAccessGrantStart (bool ignoreNav) const
   if ((lastRxEnd <= Simulator::Now ()) && !m_lastRxReceivedOk)
     {
       rxAccessStart += m_eifsNoDifs;
+      //AH:
+      NS_LOG_DEBUG ("-->AH: EIFSnoDIFS="<<m_eifsNoDifs.GetMicroSeconds());
     }
   Time busyAccessStart = m_lastBusyStart + m_lastBusyDuration + m_sifs;
   Time txAccessStart = m_lastTxStart + m_lastTxDuration + m_sifs;

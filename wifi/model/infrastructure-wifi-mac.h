@@ -42,6 +42,10 @@ public:
   InfrastructureWifiMac ();
   virtual ~InfrastructureWifiMac ();
 
+  // Alejandro:
+  void EnableMacLowLogging ();
+  void DisableMacLowLogging ();
+  
   /**
    * \param packet the packet to send.
    * \param to the address to which the packet should be sent.
