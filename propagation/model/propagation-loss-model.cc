@@ -30,6 +30,9 @@
 #include "ns3/pointer.h"
 #include <cmath>
 
+// Alejandro:
+#include "ns3/listdouble.h"
+
 namespace ns3 {
 
 NS_LOG_COMPONENT_DEFINE ("PropagationLossModel");
@@ -1046,4 +1049,135 @@ RicianFading::DoAssignStreams (int64_t stream)
 
 // ------------------------------------------------------------------------- //
 
+NS_OBJECT_ENSURE_REGISTERED (LogNormalShadowing);
+
+TypeId 
+LogNormalShadowing::GetTypeId (void)
+{
+  static TypeId tid = TypeId ("ns3::LogNormalShadowing")
+    .SetParent<PropagationLossModel> ()
+    .SetGroupName ("Propagation")
+    .AddConstructor<LogNormalShadowing> ()
+    .AddAttribute ("Sigma", "The Standard Deviation of the Gaussian random variables",
+                   DoubleValue (1),
+                   MakeDoubleAccessor (&LogNormalShadowing::GetSigma,
+                                       &LogNormalShadowing::SetSigma),
+                   MakeDoubleChecker<double> (0,100))
+    .AddAttribute ("Mu", "The Fixed value for LOS signal",
+                   DoubleValue (0),
+                   MakeDoubleAccessor (&LogNormalShadowing::GetMu,
+                                       &LogNormalShadowing::SetMu),
+                   MakeDoubleChecker<double> (0,100))
+//    .AddAttribute ("Samples", "List of normal distributed samples",
+//                   ListDoubleValue(std::vector<double>()),
+//                   MakeListDoubleAccessor (&LogNormalShadowing::GetListOfSamples,
+//                                          &LogNormalShadowing::SetListOfSamples),
+//                   MakeDoubleChecker<double> ())
+    .AddAttribute ("Gaussx",
+                   "Access to Gauss Variable X",
+                   StringValue("ns3::NormalRandomVariable"),
+                   MakePointerAccessor (&LogNormalShadowing::m_gauss_x),
+                   MakePointerChecker<NormalRandomVariable>())
+    .AddAttribute ("Gaussy",
+                   "Access to Gauss Variable Y",
+                   StringValue("ns3::NormalRandomVariable"),
+                   MakePointerAccessor (&LogNormalShadowing::m_gauss_y),
+                   MakePointerChecker<NormalRandomVariable>());
+  ;
+  return tid;
+}
+LogNormalShadowing::LogNormalShadowing ()
+  : PropagationLossModel ()
+{
+}
+
+LogNormalShadowing::~LogNormalShadowing ()
+{
+}
+
+double
+LogNormalShadowing::GetSigma () const
+{
+  return m_sigma;
+}
+
+void
+LogNormalShadowing::SetSigma (double sigma)
+{
+  m_sigma = sigma;
+}
+
+double
+LogNormalShadowing::GetMu () const
+{
+  return m_mu;
+}
+
+void
+LogNormalShadowing::SetMu (double mu)
+{
+  m_mu = mu;
+}
+
+std::vector<double>
+LogNormalShadowing::GetListOfSamples () const
+{
+  return m_samples;
+}
+
+void
+LogNormalShadowing::SetListOfSamples (std::vector<double> samples)
+{
+  m_samples = samples;
+}
+
+double
+LogNormalShadowing::DoCalcRxPower (double txPowerDbm,
+                                  Ptr<MobilityModel> a,
+                                  Ptr<MobilityModel> b) const
+{
+  double txpowerW = std::pow (10, (txPowerDbm - 30) / 10);
+
+  // Variables aleatorias
+  //Ptr<NormalRandomVariable> m_gauss_x = CreateObject<NormalRandomVariable> ();
+  m_gauss_x->SetAttribute ("Mean", DoubleValue(0));
+  m_gauss_x->SetAttribute ("Variance", DoubleValue(m_sigma * m_sigma));
+  
+  //Ptr<NormalRandomVariable> m_gauss_y = CreateObject<NormalRandomVariable> ();
+  m_gauss_y->SetAttribute ("Mean", DoubleValue(0));
+  m_gauss_y->SetAttribute ("Variance", DoubleValue(m_sigma * m_sigma));
+
+  // Obtenenos los samples
+  double gauss_x = m_gauss_x->GetValue();
+  double gauss_y = m_gauss_y->GetValue();
+    //NS_LOG_UNCOND("--> AH: Gauss x: "<<gauss_x <<", Gauss y: "<<gauss_y);
+  
+  // Obtenemos el valor de rayleigh
+  //double rayleigh = std::sqrt(gauss_x * gauss_x + gauss_y * gauss_y);
+    //NS_LOG_UNCOND("--> AH: Rayleigh: "<<rayleigh);
+
+  // Modelo de Rician
+  //double rician = std::sqrt(m_v * m_v + rayleigh * rayleigh);
+    //NS_LOG_UNCOND("--> AH: V: "<<m_v<<", Rician: " << rician);
+
+  // Efecto de Rayleigh sobre la amplitud de la señal transmitida
+  double amplitude = std::sqrt(txpowerW*2);
+  double resultPowerW = amplitude * amplitude * (m_mu * m_mu + (gauss_x * gauss_x + gauss_y * gauss_y))/2;
+    //NS_LOG_UNCOND("--> AH: amplitude: "<<amplitude<<", resultPw: "<<resultPowerW);
+
+  // Resultado en dBm
+  double resultPowerDbm = 10 * std::log10 (resultPowerW) + 30;
+
+  return resultPowerDbm;
+}
+
+int64_t
+LogNormalShadowing::DoAssignStreams (int64_t stream)
+{
+  return 0;
+}
+
+// ------------------------------------------------------------------------- //
+
 } // namespace ns3
+

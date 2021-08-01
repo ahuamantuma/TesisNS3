@@ -916,6 +916,72 @@ private:
   Ptr<NormalRandomVariable> m_gauss_y;
 };
 
+
+class LogNormalShadowing : public PropagationLossModel
+{
+public:
+  /**
+   * \brief Get the type ID.
+   * \return the object TypeId
+   */
+  static TypeId GetTypeId (void);
+
+  LogNormalShadowing ();
+  virtual ~LogNormalShadowing ();
+  /**
+   * Set the standard deviation
+   */
+  void SetSigma (double sigma);
+  /**
+   * Set the mean value
+   */
+  void SetMu (double mu);
+  /**
+   * Set the LstOfSamples
+   */
+  void SetListOfSamples (std::vector<double> samples);
+  
+  /**
+   * \return the sigma
+   */
+  double GetSigma (void) const;
+  /**
+   * \return the fixed value for LOS
+   */
+  double GetMu (void) const;
+  /**
+   * \return the fixed value for LOS
+   */
+  std::vector<double> GetListOfSamples (void) const;
+
+private:
+  /**
+   * \brief Copy constructor
+   *
+   * Defined and unimplemented to avoid misuse
+   */
+  LogNormalShadowing (const LogNormalShadowing &);
+  /**
+   * \brief Copy constructor
+   *
+   * Defined and unimplemented to avoid misuse
+   * \returns
+   */
+  LogNormalShadowing & operator = (const LogNormalShadowing &);
+
+  virtual double DoCalcRxPower (double txPowerDbm,
+                                Ptr<MobilityModel> a,
+                                Ptr<MobilityModel> b) const;
+
+  virtual int64_t DoAssignStreams (int64_t stream);
+  
+  double m_sigma;
+  double m_mu;
+  std::vector<double> m_samples;
+  Ptr<NormalRandomVariable> m_gauss_x;
+  Ptr<NormalRandomVariable> m_gauss_y;
+};
+
 } // namespace ns3
 
 #endif /* PROPAGATION_LOSS_MODEL_H */

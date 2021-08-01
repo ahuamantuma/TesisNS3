@@ -214,6 +214,7 @@ def build(bld):
         'model/time-printer.cc',
         'model/show-progress.cc',
         'model/system-wall-clock-timestamp.cc',
+        'model/listdouble.cc', # Alejandro
         ]
 
     if (bld.env['ENABLE_EXAMPLES']):
@@ -342,6 +343,7 @@ def build(bld):
         'model/node-printer.h',
         'model/time-printer.h',
         'model/show-progress.h',
+        'model/listdouble.h', # Alejandro
         ]
 
     if (bld.env['ENABLE_EXAMPLES']):

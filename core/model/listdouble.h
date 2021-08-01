@@ -15,33 +15,37 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  *
+ * Authors: Mathieu Lacage <mathieu.lacage@sophia.inria.fr>
  */
 
-#ifndef NS3_STRING_H
-#define NS3_STRING_H
+#ifndef NS_LISTDOUBLE_H
+#define NS_LISTDOUBLE_H
 
-#include <string>
+#include "attribute.h"
 #include "attribute-helper.h"
+#include <stdint.h>
+#include <limits>
+
+// Alejandro
+#include <vector>
 
 /**
  * \file
- * \ingroup attribute_String
- * ns3::StringValue attribute value declarations.
+ * \ingroup attribute_Double
+ * ns3::DoubleValue attribute value declarations and template implementations.
  */
 
 namespace ns3 {
 
-//  Additional docs for class StringValue:
+//  Additional docs for class DoubleValue:
 /**
- * Hold variables of type string
- *
- * This class can be used to hold variables of type string,
- * that is, either char * or std::string.
+ * This class can be used to hold variables of floating point type
+ * such as 'double' or 'float'. The internal format is 'double'.
  */
-ATTRIBUTE_VALUE_DEFINE_WITH_NAME (std::string, String);
-ATTRIBUTE_ACCESSOR_DEFINE (String);
-ATTRIBUTE_CHECKER_DEFINE (String);
+ATTRIBUTE_VALUE_DEFINE_WITH_NAME (std::vector<double>, ListDouble);
+ATTRIBUTE_ACCESSOR_DEFINE (ListDouble);
+ATTRIBUTE_CHECKER_DEFINE (ListDouble);
 
 } // namespace ns3
 
-#endif /* NS3_STRING_H */
+#endif /* NS_DOUBLE_H */
