@@ -872,22 +872,22 @@ public:
    *
    * Set the standard deviation
    */
-  void SetSigma (double sigma);
+  void SetKfactorSigma (double sigma);
   /**
    * \param rss (dBm) the received signal strength
    *
    * Set the fixed value for LOS
    */
-  void SetFixedV (double v);
+  void SetKfactorMu (double mu);
   
   /**
    * \return the sigma
    */
-  double GetSigma (void) const;
+  double GetKfactorSigma (void) const;
   /**
    * \return the fixed value for LOS
    */
-  double GetFixedV (void) const;
+  double GetKfactorMu (void) const;
 
 private:
   /**
@@ -910,12 +910,12 @@ private:
 
   virtual int64_t DoAssignStreams (int64_t stream);
   
-  double m_sigma;
-  double m_v;
-  Ptr<NormalRandomVariable> m_gauss_x;
-  Ptr<NormalRandomVariable> m_gauss_y;
+  double m_kfactor_sigma;
+  double m_kfactor_mu;
+  Ptr<NormalRandomVariable> m_normal_kfactor;
+  Ptr<NormalRandomVariable> m_normal_i;
+  Ptr<NormalRandomVariable> m_normal_q;
 };
-
 
 class LogNormalShadowing : public PropagationLossModel
 {

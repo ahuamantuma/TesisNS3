@@ -944,25 +944,30 @@ RicianFading::GetTypeId (void)
     .SetParent<PropagationLossModel> ()
     .SetGroupName ("Propagation")
     .AddConstructor<RicianFading> ()
-    .AddAttribute ("Sigma", "The Standard Deviation of the Gaussian random variables",
+    .AddAttribute ("KfactorSigma", "The Standard Deviation of the Gaussian random variables",
                    DoubleValue (1),
-                   MakeDoubleAccessor (&RicianFading::GetSigma,
-                                       &RicianFading::SetSigma),
+                   MakeDoubleAccessor (&RicianFading::GetKfactorSigma,
+                                       &RicianFading::SetKfactorSigma),
                    MakeDoubleChecker<double> (0,100))
-    .AddAttribute ("V", "The Fixed value for LOS signal",
-                   DoubleValue (1),
-                   MakeDoubleAccessor (&RicianFading::GetFixedV,
-                                       &RicianFading::SetFixedV),
+    .AddAttribute ("KfactorMu", "The Mean of the Kfactor Normal Distribution",
+                   DoubleValue (0),
+                   MakeDoubleAccessor (&RicianFading::GetKfactorMu,
+                                       &RicianFading::SetKfactorMu),
                    MakeDoubleChecker<double> (0,100))
-    .AddAttribute ("Gaussx",
-                   "Access to Gauss Variable X",
+    .AddAttribute ("NormalKfactor",
+                   "Access to Normal Variable Kfactor",
                    StringValue("ns3::NormalRandomVariable"),
-                   MakePointerAccessor (&RicianFading::m_gauss_x),
+                   MakePointerAccessor (&RicianFading::m_normal_kfactor),
                    MakePointerChecker<NormalRandomVariable>())
-    .AddAttribute ("Gaussy",
-                   "Access to Gauss Variable Y",
+    .AddAttribute ("NormalI",
+                   "Access to Normal Variable I",
                    StringValue("ns3::NormalRandomVariable"),
-                   MakePointerAccessor (&RicianFading::m_gauss_y),
+                   MakePointerAccessor (&RicianFading::m_normal_i),
+                   MakePointerChecker<NormalRandomVariable>())
+    .AddAttribute ("NormalQ",
+                   "Access to Normal Variable Q",
+                   StringValue("ns3::NormalRandomVariable"),
+                   MakePointerAccessor (&RicianFading::m_normal_q),
                    MakePointerChecker<NormalRandomVariable>());
   ;
   return tid;
@@ -977,66 +982,69 @@ RicianFading::~RicianFading ()
 }
 
 double
-RicianFading::GetSigma () const
+RicianFading::GetKfactorSigma () const
 {
-  return m_sigma;
+  return m_kfactor_sigma;
 }
 
 void
-RicianFading::SetSigma (double sigma)
+RicianFading::SetKfactorSigma (double sigma)
 {
-  m_sigma = sigma;
+  m_kfactor_sigma = sigma;
 }
 
 double
-RicianFading::GetFixedV () const
+RicianFading::GetKfactorMu () const
 {
-  return m_v;
+  return m_kfactor_mu;
 }
 
 void
-RicianFading::SetFixedV (double v)
+RicianFading::SetKfactorMu (double mu)
 {
-  m_v = v;
+  m_kfactor_mu = mu;
 }
 
 
 double
-RicianFading::DoCalcRxPower (double txPowerDbm,
+RicianFading::DoCalcRxPower (double rxPowerDbm,
                                   Ptr<MobilityModel> a,
                                   Ptr<MobilityModel> b) const
 {
-  double txpowerW = std::pow (10, (txPowerDbm - 30) / 10);
+  double rxpower_mW = std::pow (10, (rxPowerDbm) / 10);
   
-  // Variables aleatorias
-  //Ptr<NormalRandomVariable> m_gauss_x = CreateObject<NormalRandomVariable> ();
-  m_gauss_x->SetAttribute ("Mean", DoubleValue(0));
-  m_gauss_x->SetAttribute ("Variance", DoubleValue(m_sigma * m_sigma));
+  // Obtengo el valor de la componente especular LoS (Ro):
+  double rician_ro = std::sqrt(2*rxpower_mW);
   
-  //Ptr<NormalRandomVariable> m_gauss_y = CreateObject<NormalRandomVariable> ();
-  m_gauss_y->SetAttribute ("Mean", DoubleValue(0));
-  m_gauss_y->SetAttribute ("Variance", DoubleValue(m_sigma * m_sigma));
-
-  // Obtenenos los samples
-  double gauss_x = m_gauss_x->GetValue();
-  double gauss_y = m_gauss_y->GetValue();
-    //NS_LOG_UNCOND("--> AH: Gauss x: "<<gauss_x <<", Gauss y: "<<gauss_y);
+  // Variable aleatoria para el K factor:
+  m_normal_kfactor->SetAttribute ("Mean", DoubleValue(0));
+  m_normal_kfactor->SetAttribute ("Variance", DoubleValue(1));
   
-  // Obtenemos el valor de rayleigh
-  //double rayleigh = std::sqrt(gauss_x * gauss_x + gauss_y * gauss_y);
-    //NS_LOG_UNCOND("--> AH: Rayleigh: "<<rayleigh);
+  // Obtengo un sample para el Kfactor:
+  double kfactor_dB = m_normal_kfactor->GetValue() * m_kfactor_sigma + m_kfactor_mu;
+  double kfactor = std::pow (10, (kfactor_dB) / 10);
+  
+  // Obtengo la desv std de las gaussianas a partir del kfactor
+  double rician_sigma = std::sqrt(rician_ro * rician_ro / (2*kfactor));
 
-  // Modelo de Rician
-  //double rician = std::sqrt(m_v * m_v + rayleigh * rayleigh);
-    //NS_LOG_UNCOND("--> AH: V: "<<m_v<<", Rician: " << rician);
+  // Variables aleatorias para las componentes en fase (i) y cuadratura (q)
+  m_normal_i->SetAttribute ("Mean", DoubleValue (0));
+  m_normal_i->SetAttribute ("Variance", DoubleValue(1));
+  m_normal_q->SetAttribute ("Mean", DoubleValue (0));
+  m_normal_q->SetAttribute ("Variance", DoubleValue(1));
+  
+  // Obtenemos los samples de las componentes en fase y cuadratura totales
+  double inphase = m_normal_i->GetValue() * rician_sigma + rician_ro/std::sqrt(2);
+  double quadrature = m_normal_q->GetValue() * rician_sigma + rician_ro/std::sqrt(2);
+  
+  // Obtenemos la nueva amplitud
+  double rician_envelope = std::sqrt(inphase * inphase + quadrature * quadrature);
 
-  // Efecto de Rayleigh sobre la amplitud de la señal transmitida
-  double amplitude = std::sqrt(txpowerW*2);
-  double resultPowerW = amplitude * amplitude * (m_v * m_v + (gauss_x * gauss_x + gauss_y * gauss_y))/2;
-    //NS_LOG_UNCOND("--> AH: amplitude: "<<amplitude<<", resultPw: "<<resultPowerW);
+  // Obtenemos la nueva potencia de recepcion en mW
+  double resultPower_mW = rician_envelope * rician_envelope / 2;
 
   // Resultado en dBm
-  double resultPowerDbm = 10 * std::log10 (resultPowerW) + 30;
+  double resultPowerDbm = 10 * std::log10 (resultPower_mW);
 
   return resultPowerDbm;
 }
