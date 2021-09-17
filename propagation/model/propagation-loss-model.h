@@ -856,6 +856,55 @@ private:
   double m_range; //!< Maximum Transmission Range (meters)
 };
 
+class RayleighFading : public PropagationLossModel
+{
+public:
+  /**
+   * \brief Get the type ID.
+   * \return the object TypeId
+   */
+  static TypeId GetTypeId (void);
+
+  RayleighFading ();
+  virtual ~RayleighFading ();
+  /**
+   * \param : the rayleigh parameter
+   *
+   * Set the rayleigh parameter
+   */
+  void SetSigma (double sigma);
+  
+  /**
+   * \return the rayleigh parameter
+   */
+  double GetSigma (void) const;
+
+private:
+  /**
+   * \brief Copy constructor
+   *
+   * Defined and unimplemented to avoid misuse
+   */
+  RayleighFading (const RayleighFading &);
+  /**
+   * \brief Copy constructor
+   *
+   * Defined and unimplemented to avoid misuse
+   * \returns
+   */
+  RayleighFading & operator = (const RayleighFading &);
+
+  virtual double DoCalcRxPower (double txPowerDbm,
+                                Ptr<MobilityModel> a,
+                                Ptr<MobilityModel> b) const;
+
+  virtual int64_t DoAssignStreams (int64_t stream);
+  
+  double m_sigma;
+  Ptr<NormalRandomVariable> m_normal_i;
+  Ptr<NormalRandomVariable> m_normal_q;
+};
+
 class RicianFading : public PropagationLossModel
 {
 public:

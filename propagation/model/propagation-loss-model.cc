@@ -935,6 +935,91 @@ RangePropagationLossModel::DoAssignStreams (int64_t stream)
 
 // ------------------------------------------------------------------------- //
 
+NS_OBJECT_ENSURE_REGISTERED (RayleighFading);
+
+TypeId 
+RayleighFading::GetTypeId (void)
+{
+  static TypeId tid = TypeId ("ns3::RayleighFading")
+    .SetParent<PropagationLossModel> ()
+    .SetGroupName ("Propagation")
+    .AddConstructor<RayleighFading> ()
+    .AddAttribute ("Sigma", "The Rayleigh paramter",
+                   DoubleValue (1),
+                   MakeDoubleAccessor (&RayleighFading::GetSigma,
+                                       &RayleighFading::SetSigma),
+                   MakeDoubleChecker<double> (0,100))
+    .AddAttribute ("NormalI",
+                   "Access to Normal Variable I",
+                   StringValue("ns3::NormalRandomVariable"),
+                   MakePointerAccessor (&RayleighFading::m_normal_i),
+                   MakePointerChecker<NormalRandomVariable>())
+    .AddAttribute ("NormalQ",
+                   "Access to Normal Variable Q",
+                   StringValue("ns3::NormalRandomVariable"),
+                   MakePointerAccessor (&RayleighFading::m_normal_q),
+                   MakePointerChecker<NormalRandomVariable>());
+  ;
+  return tid;
+}
+RayleighFading::RayleighFading ()
+  : PropagationLossModel ()
+{
+}
+
+RayleighFading::~RayleighFading ()
+{
+}
+
+double
+RayleighFading::GetSigma () const
+{
+  return m_sigma;
+}
+
+void
+RayleighFading::SetSigma (double sigma)
+{
+  m_sigma = sigma;
+}
+
+double
+RayleighFading::DoCalcRxPower (double rxPowerDbm,
+                                  Ptr<MobilityModel> a,
+                                  Ptr<MobilityModel> b) const
+{
+  double rxpower_mW = std::pow (10, (rxPowerDbm) / 10);
+
+  // Variables aleatorias para las componentes en fase (i) y cuadratura (q)
+  m_normal_i->SetAttribute ("Mean", DoubleValue (0));
+  m_normal_i->SetAttribute ("Variance", DoubleValue(1));
+  m_normal_q->SetAttribute ("Mean", DoubleValue (0));
+  m_normal_q->SetAttribute ("Variance", DoubleValue(1));
+  
+  // Obtenemos los samples de las componentes en fase y cuadratura de rayleigh
+  double inphase = m_normal_i->GetValue() * m_sigma;
+  double quadrature = m_normal_q->GetValue() * m_sigma;
+
+  // Obtenemos la componente de rayleigh en potencia
+  double rayleigh_power = (inphase * inphase + quadrature * quadrature) / 2;
+
+  // Obtenemos la nueva potencia de recepcion en mW
+  double resultPower_mW = rxpower_mW * rayleigh_power;
+
+  // Resultado en dBm
+  double resultPowerDbm = 10 * std::log10 (resultPower_mW);
+
+  return resultPowerDbm;
+}
+
+int64_t
+RayleighFading::DoAssignStreams (int64_t stream)
+{
+  return 0;
+}
+
+// ------------------------------------------------------------------------- //
+
 NS_OBJECT_ENSURE_REGISTERED (RicianFading);
 
 TypeId 

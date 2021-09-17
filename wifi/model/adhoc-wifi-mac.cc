@@ -100,6 +100,7 @@ AdhocWifiMac::Enqueue (Ptr<Packet> packet, Mac48Address to)
   //If we are not a QoS STA then we definitely want to use AC_BE to
   //transmit the packet. A TID of zero will map to AC_BE (through \c
   //QosUtilsMapTidToAc()), so we use that as our default here.
+  
   uint8_t tid = 0;
 
   //For now, a STA that supports QoS does not support non-QoS
@@ -119,11 +120,15 @@ AdhocWifiMac::Enqueue (Ptr<Packet> packet, Mac48Address to)
 
       //Fill in the QoS control field in the MAC header
       tid = QosUtilsGetTidForPacket (packet);
+      
       //Any value greater than 7 is invalid and likely indicates that
       //the packet had no QoS tag, so we revert to zero, which will
       //mean that AC_BE is used.
       if (tid > 7)
         {
+          
+          // Alejandro:
+          // Cambiamos el QoS por defecto de AC_BE (0) a AC_VO (7)
           tid = 0;
         }
       hdr.SetQosTid (tid);
